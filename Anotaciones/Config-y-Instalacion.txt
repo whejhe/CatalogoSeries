@@ -1,0 +1,16 @@
+npm create vue@latest
+
+Select features to include in your project: (↑/↓ to navigate, space to select, a to toggle all, enter to confirm)       
+│
+│  ◻ Router (SPA development)
+│  ◻ Pinia (state management)
+│  ◻ ESLint (error prevention)
+│  ◻ Prettier (code formatting)
+
+npm install
+
+Supabase:
+apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6cmVtbXVyYXdiYXJ0eG1waW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0ODkwOTksImV4cCI6MjA2NTA2NTA5OX0.uAO9v2f9X2ULNKQFbmaEpwXf3x8sY1xUlY7HzT2CegM
+url: https://hzremmurawbartxmpimt.supabase.co
+
+npm install @supabase/supabase-js

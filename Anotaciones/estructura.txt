@@ -1,0 +1,17 @@
+src/
+├── assets/             # Estilos globales, imágenes, etc.
+├── components/         # Componentes reutilizables (Botones, Tarjetas de Series, etc.)
+├── router/             # Configuración de Vue Router
+│   └── index.js
+├── stores/             # Almacenes de Pinia (para el estado global: autenticación, series)
+│   ├── auth.js
+│   └── series.js
+├── views/              # Componentes de "página" (cada ruta principal tendrá su vista)
+│   ├── HomePage.vue
+│   ├── LoginPage.vue
+│   ├── RegisterPage.vue
+│   ├── AdminPage.vue
+│   └── NotFound.vue    # (opcional, para rutas no encontradas)
+├── App.vue             # Componente raíz de la aplicación
+├── main.js             # Punto de entrada de la aplicación
+└── supabase.js         # Configuración de Supabase
