@@ -1,0 +1,146 @@
+// src/assets/main.scss
+@use 'sass:color'; // Importa el módulo de color para usar funciones como color.adjust()
+@use './styles/_variables.scss' as vars; // Importa tus variables SCSS con el alias 'vars'
+
+/* Estilos globales básicos */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: vars.$page-bg-color; // Usando variables
+  color: vars.$dark-text-color; // Usando variables
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1; // Permite que el contenido principal ocupe el espacio restante
+  padding: vars.$spacing-md;
+  display: flex;
+  flex-direction: column;
+  align-items: center; // Centra el contenido horizontalmente
+  // margin-top: 60px; /* Para dejar espacio a la navbar, si la tienes en App.vue */
+}
+
+/* Estilos de tarjeta de página (general para vistas) */
+.page-card {
+  background-color: vars.$light-text-color; // Fondo de la tarjeta
+  border-radius: vars.$border-radius-md; // Bordes redondeados
+  box-shadow: vars.$box-shadow-light; // Sombra suave
+  padding: vars.$spacing-xl; // Espaciado interno
+  margin: vars.$spacing-lg auto; // Centra la tarjeta horizontalmente y añade margen vertical
+  max-width: 90%; // Ancho máximo para que no se vea demasiado ancho en pantallas grandes
+  width: 100%; // Ocupa todo el ancho disponible
+}
+
+/* Estilos de tarjeta de contenido (para elementos repetitivos como series) */
+.content-card {
+  background-color: vars.$light-text-color; // Fondo de la tarjeta
+  border-radius: vars.$border-radius-md; // Bordes redondeados
+  box-shadow: vars.$box-shadow-medium; // Sombra media
+  padding: vars.$spacing-md; // Espaciado interno
+  display: flex; // Para organizar contenido internamente
+  flex-direction: column;
+  overflow: hidden; // Asegura que las imágenes no se salgan
+  transition: transform vars.$transition-speed vars.$transition-ease;
+
+  &:hover {
+    transform: translateY(-5px); // Efecto al pasar el ratón
+  }
+}
+
+/* Estilos para grupos de formulario */
+.form-group {
+  margin-bottom: vars.$spacing-md; // Margen entre grupos de formulario
+  text-align: left; // Alinea etiquetas e inputs a la izquierda
+
+  label {
+    display: block; // Cada label en su propia línea
+    margin-bottom: vars.$spacing-xs; // Margen entre label e input
+    color: vars.$dark-text-color;
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='number'],
+  input[type='url'],
+  textarea {
+    width: 100%; // Ocupa todo el ancho del contenedor
+    padding: vars.$spacing-sm; // Relleno interno
+    border: 1px solid vars.$border-color; // Borde suave
+    border-radius: vars.$border-radius-sm; // Bordes redondeados
+    font-size: 1em;
+    color: vars.$medium-text-color;
+    box-sizing: border-box; // Incluye padding y border en el ancho total
+    transition: border-color vars.$transition-speed vars.$transition-ease;
+
+    &:focus {
+      outline: none; // Elimina el contorno al enfocar
+      border-color: vars.$primary-color; // Borde de color primario al enfocar
+    }
+
+    &:disabled {
+      background-color: vars.$disabled-bg-color; // Fondo para inputs deshabilitados
+      cursor: not-allowed; // Cursor de no permitido
+    }
+  }
+
+  textarea {
+    resize: vertical; // Permite redimensionar verticalmente
+    min-height: 100px;
+  }
+}
+
+/* Estilos de botones generales */
+button {
+  padding: vars.$spacing-sm vars.$spacing-md; // Relleno interno
+  border-radius: vars.$border-radius-sm; // Bordes redondeados
+  font-size: 1.1em;
+  cursor: pointer;
+  transition:
+    background-color vars.$transition-speed vars.$transition-ease,
+    color vars.$transition-speed vars.$transition-ease;
+  color: vars.$light-text-color; // Color del texto del botón
+  background-color: vars.$primary-color; // Color de fondo principal
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust(vars.$primary-color, $lightness: -10%); // Usando color.adjust
+  }
+
+  &:disabled {
+    background-color: color.adjust(vars.$primary-color, $lightness: 20%); // Usando color.adjust
+    cursor: not-allowed;
+  }
+}
+
+/* Mensajes de estado */
+.error-message {
+  color: vars.$danger-color; // Color rojo para errores
+  margin-top: vars.$spacing-sm;
+  font-weight: bold;
+  text-align: center;
+}
+
+.loading-message {
+  color: vars.$medium-text-color; // Color gris para mensajes de carga
+  margin-top: vars.$spacing-sm;
+  font-style: italic;
+  text-align: center;
+}
+
+.success-message {
+  color: vars.$success-color; // Color verde para mensajes de éxito
+  margin-top: vars.$spacing-sm;
+  font-weight: bold;
+  text-align: center;
+}

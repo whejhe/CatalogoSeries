@@ -127,6 +127,16 @@ Aplicación web para gestionar un catálogo de series. Construida con **Vue 3**,
 
 ---
 
+## 🎨 Gestión de Estilos (Sass)
+
+La aplicación utiliza Sass para una gestión de estilos robusta y mantenible. Se han implementado las siguientes mejoras recientes para modernizar y optimizar el uso de Sass:
+
+- **Migración a `@use`**: Se ha actualizado la forma de importar estilos y variables en todos los componentes y archivos `.scss`, pasando de la regla `@import` a la más moderna y eficiente `@use`. Esto asegura una mejor modularidad, evita conflictos de nombres y resuelve advertencias de depreciación en Dart Sass 3.0.0.
+- **Configuración de Vite**: Se ha eliminado la inyección global de variables Sass a través de `additionalData` en `vite.config.js`. Ahora, cada archivo o componente Vue que necesite acceder a las variables o funciones de Sass lo hace explícitamente mediante `@use`.
+- **Módulo de Color de Sass**: Para la manipulación de colores, se ha introducido el uso explícito del módulo `sass:color` con `@use "sass:color";`. Esto permite el acceso a funciones avanzadas como `color.adjust()`.
+- **Actualización de Funciones de Color**: Las funciones `darken()` y `lighten()`, que estaban deprecadas, han sido reemplazadas por `color.adjust()` para ajustar la luminosidad de los colores de forma segura y compatible con las últimas versiones de Sass.
+- **Variables de Estilo**: Se ha añadido la variable `$disabled-bg-color` a `src/assets/styles/_variables.scss` para proporcionar un color de fondo consistente y semántico para los elementos deshabilitados en toda la aplicación.
+
 ## ✅ Próximos Pasos (Ideas para Continuar)
 
 - 🔍 **Detalle de Serie**: Página individual para ver información completa.

@@ -73,77 +73,89 @@ const handleSignOut = async () => {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use 'sass:color'; // Importa el módulo de color
+@use '@/assets/styles/_variables.scss' as vars; // Importa tus variables SCSS con el alias 'vars'
+
 .navbar {
-  background-color: #333;
-  color: white;
-  padding: 15px 30px;
+  background-color: #333; // Este color lo mantengo directo aquí, o puedes añadirlo a _variables.scss si lo usas en más sitios
+  color: vars.$light-text-color; // Usando variables
+  padding: vars.$spacing-md vars.$spacing-xl; // Usando variables
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: vars.$box-shadow-light; // Usando variables
 }
 
 .navbar-brand .brand-link {
-  color: white;
+  color: vars.$light-text-color; // Usando variables
   text-decoration: none;
   font-size: 1.8em;
   font-weight: bold;
-  transition: color 0.3s ease;
+  transition: color vars.$transition-speed vars.$transition-ease; // Usando variables
 }
 
 .navbar-brand .brand-link:hover {
-  color: #007bff; /* Un tono de azul para el hover */
+  color: vars.$primary-color; // Usando variables
 }
 
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 20px; /* Espacio entre los enlaces */
+  gap: vars.$spacing-lg; // Usando variables
 }
 
 .nav-link {
-  color: white;
+  color: vars.$light-text-color; // Usando variables
   text-decoration: none;
   font-size: 1.1em;
-  padding: 8px 12px;
-  border-radius: 5px;
+  padding: vars.$spacing-xs vars.$spacing-sm; // Usando variables
+  border-radius: vars.$border-radius-sm; // Usando variables
   transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+    background-color vars.$transition-speed vars.$transition-ease,
+    color vars.$transition-speed vars.$transition-ease; // Usando variables
 }
 
 .nav-link:hover {
-  background-color: #555;
+  background-color: #555; // Puedes convertir esto a una variable si lo usas mucho
 }
 
 /* Estilos específicos para botones de autenticación */
 .auth-button {
-  background-color: #007bff;
+  background-color: vars.$primary-color; // Usando variables
   border: none;
   cursor: pointer;
 }
 
-.auth-button:hover {
-  background-color: #0056b3;
+.auth-button:hover:not(:disabled) {
+  background-color: color.adjust(
+    vars.$primary-color,
+    $lightness: -10%
+  ); // Usando color.adjust y variables
 }
 
 .logout-button {
-  background-color: #dc3545; /* Rojo para cerrar sesión */
+  background-color: vars.$danger-color; // Usando variables
 }
 
-.logout-button:hover {
-  background-color: #c82333;
+.logout-button:hover:not(:disabled) {
+  background-color: color.adjust(
+    vars.$danger-color,
+    $lightness: -10%
+  ); // Usando color.adjust y variables
 }
 
 .logout-button:disabled {
-  background-color: #f0a3ab;
+  background-color: color.adjust(
+    vars.$danger-color,
+    $lightness: 20%
+  ); // Usando color.adjust y variables
   cursor: not-allowed;
 }
 
 .user-info {
   font-size: 1.1em;
-  margin-right: 10px;
-  color: #a0c9ff; /* Un color ligeramente diferente para el nombre de usuario */
+  margin-right: vars.$spacing-sm; // Usando variables
+  color: #a0c9ff; // Puedes convertir esto a una variable si lo usas mucho
 }
 </style>

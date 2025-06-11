@@ -14,3 +14,7 @@ apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh
 url: https://hzremmurawbartxmpimt.supabase.co
 
 npm install @supabase/supabase-js
+
+
+Instalar preprocesador para scss:
+npm install -D sass

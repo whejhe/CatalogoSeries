@@ -1,5 +1,5 @@
 // src/main.js
-import './assets/main.css' // Puedes mantener esto o moverlo a App.vue si solo aplica a App
+import './assets/main.scss'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
