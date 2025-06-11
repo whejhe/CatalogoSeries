@@ -1,15 +1,13 @@
 // src/stores/series.js
 import { defineStore } from 'pinia'
-import { supabase } from '../supabase' // Asegúrate de que esta ruta sea correcta
+import { supabase } from '../supabase' // Asegúrate de que esta importación sea correcta
 
 export const useSeriesStore = defineStore('series', {
   state: () => ({
-    series: [], // Aquí almacenaremos el listado de series
-    currentSerie: null, // Para cuando editemos o veamos una serie específica
+    allSeries: [],
     loading: false,
     error: null,
   }),
-
   actions: {
     /**
      * @description Obtiene todas las series de la base de datos.
@@ -20,16 +18,14 @@ export const useSeriesStore = defineStore('series', {
       try {
         const { data, error } = await supabase
           .from('series')
-          .select('*') // Selecciona todas las columnas
-          .order('titulo', { ascending: true }) // Ordena por título alfabéticamente
+          .select('*')
+          .order('titulo', { ascending: true }) // Ordena por título
 
         if (error) throw error
-
-        this.series = data
-        console.log('Series cargadas:', this.series)
-      } catch (error) {
-        this.error = error.message
-        console.error('Error al cargar las series:', error.message)
+        this.allSeries = data
+      } catch (err) {
+        this.error = err.message
+        console.error('Error al cargar series:', err.message)
       } finally {
         this.loading = false
       }
@@ -37,25 +33,25 @@ export const useSeriesStore = defineStore('series', {
 
     /**
      * @description Obtiene una serie específica por su ID.
-     * @param {string} id - El UUID de la serie a obtener.
+     * @param {string} id - El ID de la serie a buscar.
+     * @returns {Object|null} La serie encontrada o null si no existe.
      */
     async fetchSerieById(id) {
       this.loading = true
       this.error = null
       try {
-        const { data, error } = await supabase
-          .from('series')
-          .select('*')
-          .eq('id', id) // Filtra por el ID de la serie
-          .single() // Espera un único resultado
+        const { data, error } = await supabase.from('series').select('*').eq('id', id).single() // Usa .single() para esperar un solo resultado
 
-        if (error) throw error
+        // PGRST116 es el código de error de Supabase si no se encuentran filas, no es un error de consulta real
+        if (error && error.code !== 'PGRST116') {
+          throw error
+        }
 
-        this.currentSerie = data
-        console.log('Serie específica cargada:', this.currentSerie)
-      } catch (error) {
-        this.error = error.message
-        console.error(`Error al cargar la serie con ID ${id}:`, error.message)
+        return data // Devuelve la serie o null si no se encontró (data será null con PGRST116)
+      } catch (err) {
+        this.error = err.message
+        console.error(`Error al cargar serie con ID ${id}:`, err.message)
+        return null
       } finally {
         this.loading = false
       }
@@ -63,22 +59,23 @@ export const useSeriesStore = defineStore('series', {
 
     /**
      * @description Añade una nueva serie a la base de datos.
-     * @param {object} serieData - Objeto con los datos de la nueva serie.
+     * @param {Object} serieData - Los datos de la serie a añadir, incluyendo trailer_url.
      */
     async addSerie(serieData) {
       this.loading = true
       this.error = null
       try {
-        const { data, error } = await supabase.from('series').insert([serieData]).select().single()
+        const { data, error } = await supabase.from('series').insert([serieData]).select()
 
         if (error) throw error
 
-        this.series.push(data) // Añade la nueva serie al estado local
-        console.log('Serie añadida con éxito:', data)
+        if (data && data.length > 0) {
+          this.allSeries.push(data[0]) // Añadir la nueva serie a la lista
+        }
         return true
-      } catch (error) {
-        this.error = error.message
-        console.error('Error al añadir la serie:', error.message)
+      } catch (err) {
+        this.error = err.message
+        console.error('Error al añadir serie:', err.message)
         return false
       } finally {
         this.loading = false
@@ -86,9 +83,9 @@ export const useSeriesStore = defineStore('series', {
     },
 
     /**
-     * @description Actualiza una serie existente en la base de datos.
-     * @param {string} id - El UUID de la serie a actualizar.
-     * @param {object} updatedData - Objeto con los datos a actualizar.
+     * @description Actualiza una serie existente.
+     * @param {string} id - El ID de la serie a actualizar.
+     * @param {Object} updatedData - Los nuevos datos de la serie.
      */
     async updateSerie(id, updatedData) {
       this.loading = true
@@ -99,20 +96,18 @@ export const useSeriesStore = defineStore('series', {
           .update(updatedData)
           .eq('id', id)
           .select()
-          .single()
 
         if (error) throw error
 
-        const index = this.series.findIndex((s) => s.id === id)
-        if (index !== -1) {
-          this.series[index] = data
+        // Actualizar la serie en el estado local
+        const index = this.allSeries.findIndex((s) => s.id === id)
+        if (index !== -1 && data && data.length > 0) {
+          this.allSeries[index] = data[0]
         }
-        this.currentSerie = data
-        console.log('Serie actualizada con éxito:', data)
         return true
-      } catch (error) {
-        this.error = error.message
-        console.error(`Error al actualizar la serie con ID ${id}:`, error.message)
+      } catch (err) {
+        this.error = err.message
+        console.error('Error al actualizar serie:', err.message)
         return false
       } finally {
         this.loading = false
@@ -120,8 +115,8 @@ export const useSeriesStore = defineStore('series', {
     },
 
     /**
-     * @description Elimina una serie de la base de datos.
-     * @param {string} id - El UUID de la serie a eliminar.
+     * @description Elimina una serie por su ID.
+     * @param {string} id - El ID de la serie a eliminar.
      */
     async deleteSerie(id) {
       this.loading = true
@@ -131,26 +126,16 @@ export const useSeriesStore = defineStore('series', {
 
         if (error) throw error
 
-        this.series = this.series.filter((s) => s.id !== id)
-        if (this.currentSerie && this.currentSerie.id === id) {
-          this.currentSerie = null
-        }
-        console.log(`Serie con ID ${id} eliminada con éxito.`)
+        // Eliminar la serie del estado local
+        this.allSeries = this.allSeries.filter((s) => s.id !== id)
         return true
-      } catch (error) {
-        this.error = error.message
-        console.error(`Error al eliminar la serie con ID ${id}:`, error.message)
+      } catch (err) {
+        this.error = err.message
+        console.error('Error al eliminar serie:', err.message)
         return false
       } finally {
         this.loading = false
       }
     },
-  },
-
-  getters: {
-    /**
-     * @returns {Array} Un array de todas las series disponibles.
-     */
-    allSeries: (state) => state.series,
   },
 })

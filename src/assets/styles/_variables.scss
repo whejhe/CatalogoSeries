@@ -1,38 +1,37 @@
 // src/assets/styles/_variables.scss
 
-// Colores principales
-$primary-color: #007bff; // Azul vibrante
-$secondary-color: #6c757d; // Gris oscuro
-$success-color: #28a745; // Verde para éxito
-$danger-color: #dc3545; // Rojo para errores/peligro
-$warning-color: #ffc107; // Amarillo para advertencias
-$info-color: #17a2b8; // Azul claro para información
+// Colores de fondo
+$page-bg-color: #f0f2f5;
+$card-bg-color: #ffffff;
+$input-bg-color: #f8f8f8; // <-- Añade esta línea
+$disabled-bg-color: #e0e0e0; // Ya deberías tener esta o similar
 
-$dark-text-color: #333; // Texto oscuro general
-$medium-text-color: #666; // Texto de detalle
-$light-text-color: #fff; // Texto blanco (para fondos oscuros)
-$border-color: #eee; // Bordes ligeros
-$card-bg-color: #f9f9f9; // Fondo de tarjetas
-$page-bg-color: #f0f2f5; // Fondo general de la página
-$disabled-bg-color: #e9ecef; // **Añadido: Fondo para elementos deshabilitados**
+// Colores de texto
+$dark-text-color: #333333;
+$medium-text-color: #666666;
+$light-text-color: #ffffff;
 
-// Sombras
-$box-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
-$box-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.05);
-$box-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.1);
+// Colores de marca y estado
+$primary-color: #42b983; // Verde Vue
+$secondary-color: #5d6d7e; // Gris azulado
+$danger-color: #e74c3c; // Rojo
+$success-color: #2ecc71; // Verde
+$info-color: #3498db; // Azul
 
 // Espaciado
-$spacing-xs: 5px;
-$spacing-sm: 10px;
-$spacing-md: 15px;
-$spacing-lg: 20px;
-$spacing-xl: 30px;
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
 
-// Border Radius
-$border-radius-sm: 5px;
+// Bordes y sombras
+$border-color: #e0e0e0;
+$border-radius-sm: 4px;
 $border-radius-md: 8px;
-$border-radius-lg: 10px;
+$box-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.05);
+$box-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
 
 // Transiciones
 $transition-speed: 0.3s;
-$transition-ease: ease;
+$transition-ease: ease-in-out;

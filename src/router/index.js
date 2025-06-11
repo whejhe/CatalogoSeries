@@ -1,13 +1,14 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../views/HomePage.vue'
-import LoginPage from '../views/LoginPage.vue'
-import RegisterPage from '../views/RegisterPage.vue'
-import AdminPage from '../views/AdminPage.vue'
-import ManageSeries from '../views/ManageSeries.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useProfilesStore } from '@/stores/profiles'
 
-import { useAuthStore } from '../stores/auth'
-import { useProfilesStore } from '../stores/profiles'
+import HomePage from '@/views/HomePage.vue'
+import LoginPage from '@/views/LoginPage.vue'
+import RegisterPage from '@/views/RegisterPage.vue'
+import ManageSeries from '@/views/ManageSeries.vue' // Este componente gestionará añadir y editar
+import AdminPage from '@/views/AdminPage.vue'
+import SeriesDetailPage from '@/views/SeriesDetailPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,91 +29,58 @@ const router = createRouter({
       component: RegisterPage,
     },
     {
-      path: '/manage-series',
-      name: 'manage-series',
+      // RUTA MODIFICADA: Ahora acepta un ID opcional para edición
+      path: '/manage-series/:id?', // El '?' hace que el parámetro 'id' sea opcional
+      name: 'manage-series', // Nombre único para la ruta de gestión (añadir o editar)
       component: ManageSeries,
-      meta: { requiresAuth: true, requiresAdminOrSuperAdmin: true }, // Protegida para admin/super_admin
+      props: true, // Permite que el 'id' del parámetro de la ruta se pase como prop al componente
+      meta: { requiresAuth: true, requiresAdminOrSuperAdmin: true }, // Protegida
     },
     {
       path: '/admin',
       name: 'admin',
       component: AdminPage,
-      meta: { requiresAuth: true, requiresAdmin: true }, // Protegida para admin (y super_admin por extensión)
+      meta: { requiresAuth: true, requiresAdminOrSuperAdmin: true }, // Protegida
     },
-    // NOTA: No existe una vista para AdminPage.vue todavía.
-    // Si esta vista es solo un placeholder, puedes dejarla así.
-    // Más adelante deberías crear AdminPage.vue si quieres que tenga contenido real.
+    {
+      path: '/series/:id',
+      name: 'series-detail',
+      component: SeriesDetailPage,
+      props: true, // Pasa el 'id' como prop
+    },
   ],
 })
 
-// Guarda de navegación global (Global Navigation Guard)
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   const profilesStore = useProfilesStore()
 
-  // Asegúrate de que el estado de autenticación esté inicializado.
-  if (authStore.loading && !authStore.isAuthenticated) {
-    // Solo si aún no está autenticado y cargando
-    await authStore.initAuth()
-  }
-
-  // Cargar el perfil del usuario autenticado si no está cargado y el usuario existe
-  // Esto es vital para que el userRole esté disponible.
+  // Asegurar que el perfil del usuario esté cargado antes de la navegación
+  // Esto es crucial para las guardias de ruta basadas en roles
   if (authStore.isAuthenticated && !profilesStore.myProfile && !profilesStore.loading) {
     await profilesStore.fetchMyProfile()
   }
 
   const isAuthenticated = authStore.isAuthenticated
-  const userRole = profilesStore.myProfile?.role?.name // Accede al rol del perfil cargado
+  const userRole = profilesStore.myProfile?.role?.name
 
-  // --- Lógica de Protección Refactorizada ---
-
-  // 1. Redirigir si el usuario ya está autenticado e intenta ir a login/register
+  // Redirigir si intenta acceder a login/register estando autenticado
   if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
-    next('/')
-    return // Importante para detener la ejecución y no evaluar más condiciones
-  }
-
-  // 2. Comprobar si la ruta requiere autenticación
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    alert('Necesitas iniciar sesión para acceder a esta página.') // Mensaje más genérico
-    next('/login')
-    return
-  }
-
-  // Si requiere autenticación Y está autenticado, ahora comprobamos los roles
-  if (isAuthenticated) {
-    // 3. Comprobar si la ruta requiere 'super_admin' o 'admin' (como /manage-series)
-    if (to.meta.requiresAdminOrSuperAdmin) {
-      if (userRole === 'admin' || userRole === 'super_admin') {
-        next() // Permitir acceso
-        return
-      } else {
-        alert(
-          'Acceso denegado. No tienes los permisos necesarios para esta sección (Admin/Super Admin).',
-        )
-        next('/')
-        return
-      }
+    next({ name: 'home' })
+  } else if (to.meta.requiresAuth && !isAuthenticated) {
+    // Redirigir a login si la ruta requiere autenticación y el usuario no está autenticado
+    next({ name: 'login' })
+  } else if (to.meta.requiresAdminOrSuperAdmin) {
+    // Redirigir si la ruta requiere admin/super_admin y el usuario no tiene el rol
+    if (!isAuthenticated || !(userRole === 'admin' || userRole === 'super_admin')) {
+      // Puedes redirigir a una página de "Acceso Denegado" o a la página de inicio
+      next({ name: 'home' })
+    } else {
+      next()
     }
-
-    // 4. Comprobar si la ruta requiere solo 'admin' (como /admin)
-    // NOTA: Un 'super_admin' es también un 'admin' a efectos de permisos en este contexto.
-    if (to.meta.requiresAdmin) {
-      if (userRole === 'admin' || userRole === 'super_admin') {
-        // Super Admin también es admin
-        next() // Permitir acceso
-        return
-      } else {
-        alert('Acceso denegado. No tienes permisos de administrador.')
-        next('/')
-        return
-      }
-    }
+  } else {
+    next()
   }
-
-  // Si ninguna de las condiciones anteriores redirige, permite la navegación.
-  next()
 })
 
 export default router
