@@ -22,31 +22,37 @@ Aplicación web para gestionar un catálogo de series. Construida con **Vue 3**,
 
 ### 3. 🧭 Rutas y Navegación Protegida (Vue Router)
 
-- **Rutas definidas**: `/`, `/login`, `/register`, `/manage-series`, `/admin`.
+- **Rutas definidas**: `/`, `/login`, `/register`, `/manage-series`, `/admin`, `/series/:id`.
 - **Guardias de navegación** (`beforeEach`):
-  - `requiresAuth`: solo usuarios autenticados.
-  - `requiresAdmin`: solo admins o super_admins.
-  - `requiresAdminOrSuperAdmin`: ambos roles.
-  - Redirección automática si se intenta acceder a `/login` o `/register` estando autenticado.
+    - `requiresAuth`: solo usuarios autenticados.
+    - `requiresAdmin`: solo admins o super_admins.
+    - `requiresAdminOrSuperAdmin`: ambos roles.
+    - Redirección automática si se intenta acceder a `/login` o `/register` estando autenticado.
 
 ### 4. 📺 Catálogo de Series
 
 - Uso de `useSeriesStore` para interacción con Supabase:
-  - `fetchSeries()`: obtener todas.
-  - `fetchSerieById()`: obtener una específica.
-  - `addSerie()`, `updateSerie()`, `deleteSerie()`.
+    - `fetchSeries()`: obtener todas.
+    - `fetchSerieById()`: obtener una específica.
+    - `addSerie()`, `updateSerie()`, `deleteSerie()`.
 - Página principal `/` muestra todas las series.
-- `/manage-series` permite agregar series (solo admin/super_admin).
+- `/manage-series` permite agregar/editar series (solo admin/super_admin).
+- `/series/:id` muestra los detalles de una serie específica.
 
-### 5. 🧩 Estructura de Componentes
+### 5. 🏷️ Gestión de Géneros (Normalizada)
+
+- Los géneros de las series se gestionan de forma normalizada a través de una tabla `genres` y una tabla de unión `serie_genres`. Esto permite que una serie pueda tener múltiples géneros de manera eficiente y escalable.
+
+### 6. 🧩 Estructura de Componentes
 
 - **`App.vue`**: raíz con barra de navegación y `<router-view />`.
 - **`TheNavbar.vue`**: muestra enlaces según autenticación y rol.
 - **Vistas**:
-  - `HomePage.vue`: catálogo de series.
-  - `LoginPage.vue`, `RegisterPage.vue`: autenticación.
-  - `ManageSeries.vue`: gestión de series.
-  - `AdminPage.vue`: panel de administración (placeholder).
+    - `HomePage.vue`: catálogo de series.
+    - `LoginPage.vue`, `RegisterPage.vue`: autenticación.
+    - `ManageSeries.vue`: gestión de series (añadir/editar).
+    - `SeriesDetailPage.vue`: detalles de una serie.
+    - `AdminPage.vue`: panel de administración (placeholder).
 
 ---
 
@@ -56,42 +62,44 @@ Aplicación web para gestionar un catálogo de series. Construida con **Vue 3**,
 - **Pinia**: gestión de estado.
 - **Vue Router 4**: enrutamiento.
 - **Supabase**:
-  - Autenticación.
-  - Base de datos PostgreSQL.
+    - Autenticación.
+    - Base de datos PostgreSQL.
 - **Vite**: bundler y servidor de desarrollo.
 
 ---
 
 ## 📂 Estructura del Proyecto
 
-```
+---
+
 .
-├── public/                     # Archivos estáticos
+├── public/ # Archivos estáticos
 ├── src/
-│   ├── assets/                # Estilos y recursos
-│   │   └── main.css
-│   ├── components/
-│   │   └── TheNavbar.vue
-│   ├── stores/
-│   │   ├── auth.js
-│   │   ├── profiles.js
-│   │   └── series.js
-│   ├── router/
-│   │   └── index.js
-│   ├── supabase/
-│   │   └── index.js
-│   ├── views/
-│   │   ├── AdminPage.vue
-│   │   ├── HomePage.vue
-│   │   ├── LoginPage.vue
-│   │   ├── ManageSeries.vue
-│   │   └── RegisterPage.vue
-│   ├── App.vue
-│   └── main.js
+│ ├── assets/ # Estilos y recursos
+│ │ └── main.css
+│ ├── components/
+│ │ └── TheNavbar.vue
+│ ├── stores/
+│ │ ├── auth.js
+│ │ ├── profiles.js
+│ │ └── series.js
+│ ├── router/
+│ │ └── index.js
+│ ├── supabase,js
+│ │
+│ ├── views/
+│ │ ├── AdminPage.vue
+│ │ ├── HomePage.vue
+│ │ ├── LoginPage.vue
+│ │ ├── ManageSeries.vue
+│ │ └── RegisterPage.vue
+│ ├── App.vue
+│ └── main.js
 ├── .env.example
 ├── package.json
 └── README.md
-```
+
+````
 
 ---
 
@@ -103,15 +111,15 @@ Aplicación web para gestionar un catálogo de series. Construida con **Vue 3**,
 
    ```bash
    npm install
-   ```
+````
 
 3. **Configura Supabase**:
 
    - Crea un proyecto en [Supabase](https://supabase.io).
-   - Crea las tablas `profiles`, `roles` y `series` con las estructuras necesarias.
-   - Añade los roles `user`, `admin`, `super_admin` a la tabla `roles`.
-   - Configura los **triggers** necesarios (ej. `handle_new_user` para crear perfiles automáticamente).
-   - Copia tus claves desde Supabase.
+   - **Aplica el esquema SQL proporcionado**, que incluye:
+     - Tablas: `profiles`, `roles`, `series`, `genres`, `serie_genres`, `user_lists`, `list_series`, `series_ratings`, `user_series_progress`, `comments`.
+     - Roles iniciales: `user`, `admin`, `super_admin`, `guest`.
+     - Funciones y triggers: `handle_new_user()` (crea perfil y lista 'Favoritos' al registrarse), `update_updated_at_column()` (para timestamps automáticos), `update_series_average_rating()` (calcula rating medio de series).
 
 4. **Crea el archivo `.env`** en la raíz del proyecto y añade tus credenciales:
 
@@ -137,14 +145,34 @@ La aplicación utiliza Sass para una gestión de estilos robusta y mantenible. S
 - **Actualización de Funciones de Color**: Las funciones `darken()` y `lighten()`, que estaban deprecadas, han sido reemplazadas por `color.adjust()` para ajustar la luminosidad de los colores de forma segura y compatible con las últimas versiones de Sass.
 - **Variables de Estilo**: Se ha añadido la variable `$disabled-bg-color` a `src/assets/styles/_variables.scss` para proporcionar un color de fondo consistente y semántico para los elementos deshabilitados en toda la aplicación.
 
-## ✅ Próximos Pasos (Ideas para Continuar)
+---
 
-- 🔍 **Detalle de Serie**: Página individual para ver información completa.
-- ✏️ **Edición/Eliminación**: Agregar funciones para modificar o eliminar series desde la interfaz.
-- 🖼️ **Subida de Imágenes**: Implementar carga directa a Supabase Storage.
-- 🔎 **Búsqueda y Filtrado**: Buscar series por título, género u otros filtros.
-- 📄 **Paginación**: Mejorar rendimiento al manejar grandes volúmenes.
-- ⭐ **Favoritos/Listas**: Permitir que los usuarios guarden o marquen series favoritas.
-- 🎨 **Mejoras UI/UX**: Aplicar mejores estilos, animaciones y experiencia general.
+## 📦 Dependencias y Configuración Adicional
+
+El archivo `package.json` lista varias dependencias de desarrollo relacionadas con la calidad del código y el formato:
+
+- **ESLint**: Configurado para linting de código JavaScript y Vue. El archivo de configuración principal es `eslint.config.js`.
+- **Prettier**: Utilizado para formatear automáticamente el código. La configuración se encuentra en `.prettierrc.json`.
+- Los scripts `npm run lint` y `npm run format` están definidos para ejecutar estas herramientas.
+
+## ⚙️ Inicialización y Configuración (Detalles del Código)
+
+- **Inicialización de Stores**: El archivo `src/main.js` muestra la secuencia específica de inicialización de las stores de Pinia (`auth`, `profiles`, `series`) después de que Pinia se ha montado en la aplicación.
+- **Suscripción de Autenticación**: En `src/main.js`, hay una suscripción al estado de la store `auth` (`authStore.$subscribe`). Esta suscripción se encarga de llamar a `profilesStore.fetchMyProfile()` automáticamente cuando el usuario se logea (`state.user` existe) y de limpiar `profilesStore.myProfile` cuando el usuario cierra sesión (`state.user` es nulo). Esto asegura que el perfil del usuario autenticado esté siempre sincronizado con el estado de autenticación.
+- **Carga de Variables de Entorno**: El archivo `src/supabase.js` demuestra cómo se accede a las variables de entorno de Supabase (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) utilizando `import.meta.env`, que es el método recomendado por Vite. También incluye una verificación básica para asegurar que estas variables estén definidas.
+
+## 📄 index.html
+
+- El título de la página en `index.html` es el valor por defecto de Vite: `<title>Vite App</title>`. Este podría ser actualizado a un título más descriptivo del proyecto, como "Catálogo de Series".
 
 ---
+
+## ✅ Próximos Pasos (Ideas para Continuar)
+
+- 🖼️ **Subida de Imágenes**: Implementar carga directa a Supabase Storage para las portadas.
+- 🔎 **Búsqueda y Filtrado**: Buscar series por título, género u otros filtros.
+- 📄 **Paginación**: Mejorar rendimiento al manejar grandes volúmenes de series.
+- ⭐ **Favoritos/Listas Adicionales**: Permitir que los usuarios gestionen sus series en listas personalizadas.
+- 🎨 **Mejoras UI/UX**: Aplicar mejores estilos, animaciones y mejorar la experiencia general del usuario.
+- 💬 **Funcionalidad de Comentarios**: Integrar la posibilidad de que los usuarios dejen comentarios en las series.
+- 📊 **Seguimiento de Progreso**: Permitir a los usuarios marcar episodios vistos y seguir su progreso en las series.

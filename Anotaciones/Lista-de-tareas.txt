@@ -1,0 +1,39 @@
+Lista de Tareas
+
+    Añadir reproductor de audio en ficha series
+
+    
+
+    Implementar carga de datos en el formulario de ManageSeries.vue para edición.
+    
+    Conectar la acción de updateSerie en ManageSeries.vue al enviar el formulario.
+    
+    Añadir funcionalidad de eliminación de series (botón y llamada a deleteSerie).
+    
+    Desarrollar la interfaz de usuario en AdminPage.vue para listar perfiles.
+    
+    Implementar la capacidad de cambiar roles de usuario en AdminPage.vue.
+    
+    Integrar la subida de imágenes a Supabase Storage en ManageSeries.vue.
+    
+    Actualizar series.js para guardar la URL de la imagen de Supabase en la base de datos.
+    
+    Añadir campo de búsqueda en HomePage.vue.
+    
+    Modificar fetchSeries en series.js para aplicar filtros de búsqueda.
+    
+    Implementar controles de paginación en HomePage.vue.
+    
+    Ajustar fetchSeries en series.js para soportar paginación.
+    
+    Crear tabla user_series (o favorites) en Supabase para favoritos.
+    
+    Desarrollar un store de Pinia para gestionar favoritos/series de usuario.
+    
+    Crear componente y ruta /my-series para listar series favoritas.
+    
+    Añadir validación de formularios en ManageSeries.vue (y opcionalmente en otros formularios).
+    
+    Mejorar el manejo de estados de carga y error en la UI de todos los componentes.
+    
+    Actualizar el título de la página en index.html.
