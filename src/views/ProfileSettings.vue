@@ -98,7 +98,8 @@ const selectedFile = ref(null) // Almacena el archivo File seleccionado
 const uploadMessage = ref('') // Mensaje de estado para la subida del avatar
 
 // Ruta al avatar por defecto, asumiendo que está en la carpeta `public`
-const defaultAvatarPath = '/user-avatars/avatars/default-avatar.png'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const defaultAvatarPath = `${supabaseUrl}/storage/v1/object/public/user-avatars/avatars/default-avatar.png`
 
 // Propiedad computada que devuelve la URL del avatar del usuario o la URL del avatar por defecto
 const currentAvatarUrl = computed(() => {
