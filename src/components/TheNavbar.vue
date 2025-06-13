@@ -36,15 +36,23 @@
       </template>
 
       <template v-else>
-        <span class="user-info"
-          >Hola, {{ profilesStore.myProfile?.nick || authStore.userEmail }}</span
-        >
+        <router-link to="/profile-settings" class="nav-link user-avatar-link">
+          <img
+            :src="authStore.profile?.avatar_url || defaultAvatarPath"
+            alt="Avatar de usuario"
+            class="user-avatar-small"
+          />
+          <span class="user-info"
+            >Hola, {{ authStore.profile?.nick || authStore.user?.email }}</span
+          >
+        </router-link>
+
         <button
           @click="handleSignOut"
           :disabled="authStore.loading"
           class="nav-link auth-button logout-button"
         >
-          Cerrar Sesión
+          {{ authStore.loading ? 'Cerrando...' : 'Cerrar Sesión' }}
         </button>
       </template>
     </div>
@@ -52,24 +60,38 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useProfilesStore } from '../stores/profiles'
+import { useProfilesStore } from '../stores/profiles' // Asumiendo que profilesStore se usa para otras cosas de roles
 
 const authStore = useAuthStore()
-const profilesStore = useProfilesStore()
+const profilesStore = useProfilesStore() // Mantenemos profilesStore para la lógica de roles
 const router = useRouter()
+
+// Ruta al avatar por defecto (desde la carpeta public)
+const defaultAvatarPath = '/user-avatars/avatars/default-avatar.png'
+
+// La lógica para el avatar ahora se puede hacer directamente en el template
+// o mantenerla aquí si necesitas más complejidad.
+// userAvatar ya no es estrictamente necesario aquí si lo usas en el template.
+// const userAvatar = computed(() => {
+//   return profilesStore.myProfile?.avatar_url || defaultAvatarPath
+// })
 
 /**
  * @description Maneja el cierre de sesión del usuario.
+ * Redirige a la página de login si el cierre de sesión es exitoso.
  */
 const handleSignOut = async () => {
+  console.log('handleSignOut function called')
+  router.push('/login')
   const success = await authStore.signOut()
   if (success) {
-    // Redirigir a la página de inicio o login después de cerrar sesión
     router.push('/login')
+  } else {
+    alert('Error al cerrar sesión.')
   }
-  // No necesitas manejar el error aquí ya que el store de auth lo hace
 }
 </script>
 
@@ -78,25 +100,31 @@ const handleSignOut = async () => {
 @use '@/assets/styles/_variables.scss' as vars; // Importa tus variables SCSS con el alias 'vars'
 
 .navbar {
-  background-color: #333; // Este color lo mantengo directo aquí, o puedes añadirlo a _variables.scss si lo usas en más sitios
-  color: vars.$light-text-color; // Usando variables
-  padding: vars.$spacing-md vars.$spacing-xl; // Usando variables
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: vars.$box-shadow-light; // Usando variables
-}
-
-.navbar-brand .brand-link {
+  background-color: vars.$navbar-bg-color; // Usando variables
+  padding: vars.$spacing-md vars.$spacing-xl; // Usando variables
   color: vars.$light-text-color; // Usando variables
-  text-decoration: none;
-  font-size: 1.8em;
-  font-weight: bold;
-  transition: color vars.$transition-speed vars.$transition-ease; // Usando variables
+  box-shadow: vars.$box-shadow-small; // Sombra sutil para la barra de navegación
 }
 
-.navbar-brand .brand-link:hover {
-  color: vars.$primary-color; // Usando variables
+.navbar-brand {
+  .brand-link {
+    color: vars.$light-text-color; // Usando variables
+    text-decoration: none;
+    font-size: 1.5em;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: color vars.$transition-speed vars.$transition-ease; // Usando variables
+
+    &:hover {
+      color: color.adjust(
+        vars.$light-text-color,
+        $lightness: 10%
+      ); // Usando color.adjust y variables
+    }
+  }
 }
 
 .navbar-links {
@@ -114,6 +142,9 @@ const handleSignOut = async () => {
   transition:
     background-color vars.$transition-speed vars.$transition-ease,
     color vars.$transition-speed vars.$transition-ease; // Usando variables
+  display: flex; /* Para alinear el avatar y el texto */
+  align-items: center;
+  gap: vars.$spacing-xs; /* Espacio entre avatar y texto */
 }
 
 .nav-link:hover {
@@ -148,14 +179,29 @@ const handleSignOut = async () => {
 .logout-button:disabled {
   background-color: color.adjust(
     vars.$danger-color,
-    $lightness: 20%
-  ); // Usando color.adjust y variables
+    $alpha: -0.5
+  ); // Reduce la opacidad para deshabilitado
   cursor: not-allowed;
+  opacity: 0.7; // Hace el botón un poco transparente
 }
 
 .user-info {
+  color: vars.$light-text-color;
   font-size: 1.1em;
-  margin-right: vars.$spacing-sm; // Usando variables
-  color: #a0c9ff; // Puedes convertir esto a una variable si lo usas mucho
+  // Ya tiene gap del .nav-link, no necesita margin-left adicional
+}
+
+.user-avatar-link {
+  // Asegurarse de que el router-link que envuelve el avatar y el texto tenga un estilo consistente
+  // Ya tiene `display: flex; align-items: center; gap: vars.$spacing-xs;` de .nav-link
+}
+
+.user-avatar-small {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid vars.$light-text-color; // Borde para destacar el avatar
+  vertical-align: middle; // Alineación vertical
 }
 </style>

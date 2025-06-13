@@ -11,6 +11,10 @@ import { useAuthStore } from './stores/auth'
 import { useProfilesStore } from './stores/profiles'
 import { useSeriesStore } from './stores/series'
 
+// Importar Vue-Toastification y su CSS
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css' // ¡Importante para los estilos por defecto del toast!
+
 const app = createApp(App)
 
 app.use(createPinia())
@@ -19,6 +23,24 @@ app.use(createPinia())
 const authStore = useAuthStore()
 const profilesStore = useProfilesStore()
 const seriesStore = useSeriesStore()
+
+// Configurar Toastification (puedes añadir opciones aquí para personalizar su comportamiento global)
+const toastOptions = {
+  // Por ejemplo, para cambiar la posición o duración:
+  // position: 'top-center',
+  // timeout: 3000,
+  // closeOnClick: true,
+  // pauseOnFocusLoss: true,
+  // pauseOnHover: true,
+  // draggable: true,
+  // draggablePercent: 0.6,
+  // showCloseButtonOnHover: false,
+  // hideProgressBar: false,
+  // closeButton: 'button',
+  // icon: true,
+  // rtl: false,
+}
+app.use(Toast, toastOptions) // ¡Añadir la librería a la aplicación Vue!
 
 authStore.initAuth() // Inicializa la autenticación
 

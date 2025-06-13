@@ -8,8 +8,8 @@
           <input type="text" id="titulo" v-model="formData.titulo" required />
         </div>
         <div class="form-group">
-          <label for="genero">Género:</label>
-          <input type="text" id="genero" v-model="formData.genero" required />
+          <label for="original_title">Título Original:</label>
+          <input type="text" id="original_title" v-model="formData.original_title" />
         </div>
         <div class="form-group">
           <label for="año_lanzamiento">Año de Lanzamiento:</label>
@@ -86,7 +86,7 @@ const successMessage = ref('') // Mensaje de éxito después de una operación
 const formData = ref({
   // Objeto reactivo para los datos del formulario
   titulo: '',
-  genero: '',
+  original_title: '',
   año_lanzamiento: null,
   sinopsis: '',
   portada_url: '',
@@ -157,7 +157,7 @@ const handleSubmit = async () => {
       // Limpiar el formulario después de añadir para una nueva entrada
       formData.value = {
         titulo: '',
-        genero: '',
+        original_title: '',
         año_lanzamiento: null,
         sinopsis: '',
         portada_url: '',

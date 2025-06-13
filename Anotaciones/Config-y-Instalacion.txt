@@ -18,3 +18,8 @@ npm install @supabase/supabase-js
 
 Instalar preprocesador para scss:
 npm install -D sass
+
+Mensajes Emergentes:
+npm install vue-toastification@next
+
+npm install uuid

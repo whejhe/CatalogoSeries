@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS public.series (
     banda_sonora_url TEXT,
     trailer_url TEXT,
     average_rating NUMERIC(3, 2) DEFAULT 0.00, -- Valoración media calculada
-    ratings_count INTEGER DEFAULT 0,         -- Número total de valoraciones
+    ratings_count INTEGER DEFAULT 0,          -- Número total de valoraciones
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -140,7 +140,7 @@ INSERT INTO public.genres (name) VALUES
     ('Terror'),
     ('Misterio'),
     ('Romance'),
-    ('Thriller'),
+    ('Terror'),
     ('Animación'),
     ('Documental'),
     ('Histórico'),
@@ -177,6 +177,7 @@ CREATE INDEX IF NOT EXISTS idx_serie_genres_serie_id ON public.serie_genres (ser
 CREATE INDEX IF NOT EXISTS idx_serie_genres_genre_id ON public.serie_genres (genre_id);
 
 
+-- Estructura de la tabla `profiles` (Actualizada con `email`)
 --
 -- Estructura de la tabla `profiles`
 -- Almacena información detallada del perfil de cada usuario, enlazada con auth.users.
@@ -190,6 +191,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     nick TEXT UNIQUE NOT NULL, -- Considerar si 'UNIQUE' es deseable si el nick se autogenera con email.
                                -- Podría causar conflictos si un email ya existe como nick.
     edad INTEGER,
+    email TEXT, -- ¡CAMPO EMAIL AÑADIDO AQUÍ!
     avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -205,6 +207,7 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Índices para búsquedas más rápidas en 'profiles'
 CREATE INDEX IF NOT EXISTS idx_profiles_nick ON public.profiles (nick);
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles (user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles (email); -- Nuevo índice para el email
 
 
 --
@@ -413,8 +416,8 @@ BEGIN
 
     -- Insertar un nuevo perfil para el usuario recién autenticado
     -- Se usa NEW.email como nick inicial. Es importante que el nick sea único.
-    INSERT INTO public.profiles (user_id, nick, role_id, created_at)
-    VALUES (NEW.id, NEW.email, default_role_id, now())
+    INSERT INTO public.profiles (user_id, nick, role_id, email, created_at)
+    VALUES (NEW.id, NEW.email, default_role_id, NEW.email, now())
     RETURNING id INTO new_profile_id; -- Capturamos el ID del nuevo perfil
 
     -- Crear la lista "Favoritos" por defecto para este nuevo usuario

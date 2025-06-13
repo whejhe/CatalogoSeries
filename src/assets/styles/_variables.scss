@@ -3,9 +3,11 @@
 // Colores de fondo
 $page-bg-color: #f0f2f5;
 $card-bg-color: #ffffff;
-$input-bg-color: #f8f8f8; // <-- Añade esta línea
+$light-background-color: #ffffff;
+$input-bg-color: #f8f8f8;
 $dark-background-color: #2c3e50; // Dark background color for persistent elements
-$disabled-bg-color: #e0e0e0; // Ya deberías tener esta o similar
+$disabled-bg-color: #e0e0e0;
+$navbar-bg-color: $dark-background-color;
 
 // Colores de texto
 $dark-text-color: #333333;
@@ -19,6 +21,10 @@ $danger-color: #e74c3c; // Rojo
 $success-color: #2ecc71; // Verde
 $info-color: #3498db; // Azul
 
+// Colores específicos para estado de usuario
+$online-color: $success-color; // Usamos el color de éxito para 'online'
+$offline-color: $danger-color; // Usamos el color de peligro para 'offline'
+
 // Espaciado
 $spacing-xs: 4px;
 $spacing-sm: 8px;
@@ -28,11 +34,22 @@ $spacing-xl: 32px;
 
 // Bordes y sombras
 $border-color: #e0e0e0;
+$light-border-color: #f0f0f0;
 $border-radius-sm: 4px;
 $border-radius-md: 8px;
+$border-radius-lg: 12px;
+$box-shadow-small: 0 1px 2px rgba(0, 0, 0, 0.03); // ¡Añadimos esta línea!
 $box-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.05);
 $box-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
 $box-shadow-large: 0 8px 16px rgba(0, 0, 0, 0.2); // Larger shadow for persistent elements
+
+// Tamaños de Avatar
+$avatar-size-sm: 36px;
+$avatar-size-md: 64px;
+$avatar-size-lg: 120px;
+
+// Tamaño de indicador de estado (online/offline)
+$online-indicator-size: 10px;
 
 // Transiciones
 $transition-speed: 0.3s;

@@ -1,14 +1,13 @@
 <template>
   <div class="series-detail-page page-card">
     <p v-if="loading" class="loading-message">Cargando detalles de la serie...</p>
-    <p v-if="error" class="error-message">{{ error }}</p>
+    <p v-if="error" class="error-message">Error: {{ error }}</p>
 
     <div v-if="series" class="series-content">
       <div class="series-header">
         <img :src="series.portada_url" :alt="series.titulo" class="series-cover-large" />
         <div class="series-info">
           <h1>{{ series.titulo }}</h1>
-          <p><strong>Género:</strong> {{ series.genero }}</p>
           <p><strong>Año de Lanzamiento:</strong> {{ series.año_lanzamiento }}</p>
           <p class="series-sinopsis">{{ series.sinopsis }}</p>
         </div>
@@ -31,131 +30,102 @@
       <p v-else class="no-trailer-message">No hay trailer disponible para esta serie.</p>
 
       <div class="action-buttons">
-        <button v-if="canEditSeries" @click="editSeries" class="edit-button">Editar Serie</button>
-        <button @click="router.push('/')" class="back-button">Volver al Catálogo</button>
+        <button @click="goBack" class="back-button">Volver al Catálogo</button>
+        <button
+          v-if="
+            authStore.isAuthenticated &&
+            (profilesStore.myProfile?.role?.name === 'admin' ||
+              profilesStore.myProfile?.role?.name === 'super_admin')
+          "
+          @click="editSerie"
+          class="edit-button"
+        >
+          Editar Serie
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSeriesStore } from '../stores/series'
-import { useProfilesStore } from '../stores/profiles' // Importa el store de perfiles
+import { useAuthStore } from '../stores/auth' // Necesario para verificar si está autenticado
+import { useProfilesStore } from '../stores/profiles' // Necesario para verificar el rol
 
-const props = defineProps({
-  id: {
-    type: String,
-    required: true,
-  },
-})
-
-const seriesStore = useSeriesStore()
-const profilesStore = useProfilesStore() // Inicializa el store de perfiles
 const route = useRoute()
 const router = useRouter()
+const seriesStore = useSeriesStore()
+const authStore = useAuthStore()
+const profilesStore = useProfilesStore()
 
 const series = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
-/**
- * @description Propiedad computada para verificar si el usuario actual puede editar series.
- * Solo administradores y superadministradores tienen este permiso.
- */
-const canEditSeries = computed(() => {
-  // Asegurarse de que el perfil esté cargado y que el rol sea 'admin' o 'super_admin'
-  const userRole = profilesStore.myProfile?.role?.name
-  return userRole === 'admin' || userRole === 'super_admin'
-})
-
-/**
- * @description Extrae el ID de un video de YouTube de una URL dada.
- * @param {string} url - La URL del video de YouTube.
- * @returns {string|null} El ID del video de YouTube o null si no se encuentra.
- */
-const getYouTubeVideoId = (url) => {
-  if (!url) return null
-  let videoId = null
-  const youtubeRegex =
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  const match = url.match(youtubeRegex)
-  if (match && match[1]) {
-    videoId = match[1]
-  }
-  return videoId
-}
-
 // Propiedad computada para generar la URL de incrustación de YouTube
 const youtubeEmbedUrl = computed(() => {
-  if (series.value && series.value.trailer_url) {
-    const videoId = getYouTubeVideoId(series.value.trailer_url)
-    // Formato de URL para incrustar videos de YouTube
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+  if (series.value?.trailer_url) {
+    const url = series.value.trailer_url
+    // Expresión regular para extraer el ID de video de varias URLs de YouTube
+    const regExp =
+      /(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([\w-]{11})(?:\S+)?/
+    const match = url.match(regExp)
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}`
+    }
   }
   return null
 })
 
 /**
- * @description Carga los detalles de una serie específica desde el store.
- * @param {string} serieId - El ID de la serie a cargar.
+ * @description Carga los detalles de la serie por su ID.
+ * @param {string} id - El ID de la serie.
  */
-const fetchSeriesDetails = async (serieId) => {
+const fetchSerieDetails = async (id) => {
   loading.value = true
   error.value = null
   try {
-    const fetchedSeries = await seriesStore.fetchSerieById(serieId)
+    const fetchedSeries = await seriesStore.fetchSerieById(id)
     if (fetchedSeries) {
       series.value = fetchedSeries
     } else {
       error.value = 'Serie no encontrada.'
-      series.value = null
     }
   } catch (err) {
-    error.value = 'Error al cargar los detalles de la serie: ' + err.message
-    series.value = null
-    console.error(err)
+    error.value = err.message
   } finally {
     loading.value = false
   }
 }
 
+// Observa el ID de la ruta para recargar los detalles de la serie si cambia
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId) {
+      fetchSerieDetails(newId)
+    }
+  },
+  { immediate: true }, // Carga los detalles de la serie inmediatamente al montar
+)
+
+/**
+ * @description Navega de regreso a la página principal.
+ */
+const goBack = () => {
+  router.push('/')
+}
+
 /**
  * @description Navega a la página de edición de la serie actual.
  */
-const editSeries = () => {
-  if (series.value && series.value.id) {
-    // Navegamos a la ruta 'manage-series' con el ID de la serie
+const editSerie = () => {
+  if (series.value?.id) {
     router.push({ name: 'manage-series', params: { id: series.value.id } })
   }
 }
-
-onMounted(() => {
-  // Asegurarse de que el perfil esté cargado si no lo está.
-  // Esto es importante para que 'canEditSeries' tenga el rol correcto.
-  if (profilesStore.isAuthenticated && !profilesStore.myProfile && !profilesStore.loading) {
-    profilesStore.fetchMyProfile()
-  }
-
-  if (props.id) {
-    fetchSeriesDetails(props.id)
-  } else {
-    error.value = 'No se proporcionó ID de serie en la ruta.'
-    loading.value = false
-  }
-})
-
-// Opcional: Re-cargar si el ID de la ruta cambia (si el usuario navega entre detalles de series)
-watch(
-  () => props.id,
-  (newId) => {
-    if (newId) {
-      fetchSeriesDetails(newId)
-    }
-  },
-  { immediate: true },
-)
 </script>
 
 <style scoped lang="scss">
@@ -163,11 +133,23 @@ watch(
 @use '@/assets/styles/_variables.scss' as vars;
 
 .series-detail-page {
-  padding: vars.$spacing-xl;
   max-width: 900px;
-  width: 100%;
   margin: vars.$spacing-lg auto;
-  text-align: left;
+  padding: vars.$spacing-xl;
+  background-color: vars.$light-background-color;
+  border-radius: vars.$border-radius-lg;
+  box-shadow: vars.$box-shadow-medium;
+}
+
+.loading-message,
+.error-message {
+  text-align: center;
+  margin-top: vars.$spacing-lg;
+  font-weight: bold;
+}
+
+.error-message {
+  color: vars.$danger-color;
 }
 
 .series-content {
@@ -178,73 +160,69 @@ watch(
 
 .series-header {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Cambiado a columna para móviles, luego a fila */
   align-items: center;
-  gap: vars.$spacing-lg;
+  gap: vars.$spacing-xl;
 
   @media (min-width: 768px) {
-    flex-direction: row;
+    flex-direction: row; /* En pantallas más grandes, volver a fila */
     align-items: flex-start;
   }
 }
 
 .series-cover-large {
   width: 100%;
-  max-width: 300px;
+  max-width: 300px; /* Ancho máximo para la portada */
   height: auto;
   border-radius: vars.$border-radius-md;
   box-shadow: vars.$box-shadow-medium;
-  flex-shrink: 0;
+  object-fit: cover;
 }
 
 .series-info {
   flex-grow: 1;
+  text-align: center; /* Centrar texto en móvil */
+
+  @media (min-width: 768px) {
+    text-align: left; /* Alinear a la izquierda en pantallas grandes */
+  }
+
   h1 {
-    color: vars.$primary-color;
     font-size: 2.5em;
-    margin-top: 0;
+    color: vars.$primary-color;
     margin-bottom: vars.$spacing-md;
-    text-align: center;
-    @media (min-width: 768px) {
-      text-align: left;
-    }
   }
 
   p {
-    color: vars.$medium-text-color;
-    margin-bottom: vars.$spacing-sm;
     font-size: 1.1em;
-
-    strong {
-      color: vars.$dark-text-color;
-    }
+    color: vars.$dark-text-color;
+    margin-bottom: vars.$spacing-sm;
   }
 
   .series-sinopsis {
+    margin-top: vars.$spacing-md;
     font-size: 1em;
     line-height: 1.6;
-    margin-top: vars.$spacing-md;
-    color: vars.$dark-text-color;
+    color: vars.$medium-text-color;
   }
 }
 
 .series-trailer {
   margin-top: vars.$spacing-xl;
+
   h2 {
+    font-size: 1.8em;
     color: vars.$dark-text-color;
-    font-size: 2em;
-    margin-bottom: vars.$spacing-lg;
+    margin-bottom: vars.$spacing-md;
     text-align: center;
   }
 }
 
 .video-responsive {
   position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
   height: 0;
   overflow: hidden;
-  max-width: 100%;
-  background: #000;
   border-radius: vars.$border-radius-md;
   box-shadow: vars.$box-shadow-medium;
 
@@ -292,19 +270,11 @@ watch(
   background-color: vars.$secondary-color;
   color: vars.$light-text-color;
   border: none;
-
-  &:hover {
-    background-color: color.adjust(vars.$secondary-color, $lightness: -10%);
-  }
 }
 
 .edit-button {
-  background-color: vars.$primary-color; // Color principal para el botón de edición
+  background-color: vars.$primary-color;
   color: vars.$light-text-color;
   border: none;
-
-  &:hover {
-    background-color: color.adjust(vars.$primary-color, $lightness: -10%);
-  }
 }
 </style>

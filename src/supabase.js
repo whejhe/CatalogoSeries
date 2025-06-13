@@ -11,4 +11,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Error: Las variables de entorno de Supabase no están definidas.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export { supabase }
+
+// Para depuración en la consola del navegador
+window.supabase = supabase
