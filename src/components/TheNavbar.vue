@@ -42,9 +42,6 @@
             alt="Avatar de usuario"
             class="user-avatar-small"
           />
-          <span class="user-info"
-            >Hola, {{ authStore.profile?.nick || authStore.user?.email }}</span
-          >
         </router-link>
 
         <button
@@ -70,7 +67,9 @@ const profilesStore = useProfilesStore() // Mantenemos profilesStore para la ló
 const router = useRouter()
 
 // Ruta al avatar por defecto (desde la carpeta public)
-const defaultAvatarPath = '/user-avatars/avatars/default-avatar.png'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const defaultAvatarPath =
+  'https://hzremmurawbartxmpimt.supabase.co/storage/v1/object/public/user-avatars/avatars/default-avatar.png'
 
 // La lógica para el avatar ahora se puede hacer directamente en el template
 // o mantenerla aquí si necesitas más complejidad.

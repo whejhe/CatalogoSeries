@@ -235,10 +235,7 @@ const useAuthStore = defineStore('auth', {
     currentUser: (state) => state.user,
     userDisplayName: (state) => {
       console.log('userDisplayName: state.profile', state.profile)
-      if (state.profile?.nick) {
-        return state.profile.nick
-      }
-      return state.user ? state.user.email : 'Invitado'
+      return state.profile?.nick || state.user?.email || 'Invitado'
     },
     userRole: (state) => {
       return state.profile?.role?.name || null
