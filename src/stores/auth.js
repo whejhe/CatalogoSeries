@@ -37,7 +37,7 @@ const useAuthStore = defineStore('auth', {
           console.log('initAuth: Usuario detectado, cargando perfil...')
           await this.fetchProfile() // Carga el perfil si el usuario ya estรก autenticado
         } else {
-          console.log('initAuth: No hay sesiรณn activa.')
+          console.log('initAuth: No hay sesion activa.')
         }
 
         // Suscribe a los cambios de estado de autenticaciรณn (login, logout, token refresh)
@@ -48,7 +48,7 @@ const useAuthStore = defineStore('auth', {
             console.log('onAuthStateChange: Usuario logueado, recargando perfil...')
             await this.fetchProfile() // Vuelve a cargar el perfil si el estado cambia a logueado
           } else {
-            console.log('onAuthStateChange: Usuario deslogueado o sin sesiรณn.')
+            console.log('onAuthStateChange: Usuario deslogueado o sin sesion.')
             this.profile = null // Limpia el perfil si el usuario se desloguea
           }
           console.log('Estado de autenticaciรณn cambiado:', this.user ? 'Logeado' : 'Deslogeado')
@@ -57,10 +57,7 @@ const useAuthStore = defineStore('auth', {
         console.error('initAuth: Error durante la inicializaciรณn:', error.message)
       } finally {
         this.loading = false
-        console.log(
-          'initAuth: Inicializaciรณn de autenticaciรณn finalizada. Loading:',
-          this.loading,
-        )
+        console.log('initAuth: Inicializacion de autenticación finalizada. Loading:', this.loading)
       }
     },
 
@@ -138,9 +135,10 @@ const useAuthStore = defineStore('auth', {
      * @param {string} [nombre] - Nombre real del usuario (opcional).
      * @param {string} apellidos - Apellidos del usuario (opcional).
      * @param {number} edad - Edad del usuario (opcional).
+     * @param {File} avatarFile - Archivo del avatar (opcional).
      * @returns {Promise<boolean>} True si el registro fue exitoso, false en caso contrario.
      */
-    async signUp(email, password, nick, nombre, apellidos, edad) {
+    async signUp(email, password, nick, nombre, apellidos, edad, avatarFile) {
       console.log('signUp: Iniciando registro de usuario...')
       this.loading = true
       const toast = useToast()
@@ -152,10 +150,11 @@ const useAuthStore = defineStore('auth', {
           password: password,
           options: {
             data: {
-              nick: nick,
-              nombre: nombre,
-              apellidos: apellidos,
-              edad: edad,
+              // No necesitamos pasar estos datos aquí, los guardaremos directamente en la tabla profiles
+              // nick: nick,
+              // nombre: nombre,
+              // apellidos: apellidos,
+              // edad: edad,
             },
           },
         })
@@ -168,14 +167,101 @@ const useAuthStore = defineStore('auth', {
         if (authData.user) {
           console.log('signUp: Usuario registrado en Auth:', authData.user)
           this.user = authData.user
-          await this.fetchProfile()
-          toast.success('ยกRegistro exitoso! Ya puedes iniciar sesiรณn.')
-          console.log('signUp: Usuario y perfil registrados con รฉxito por el trigger.')
+
+          let profileData
+          try {
+            // Crear el perfil en la tabla profiles
+            const { data, error } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  user_id: authData.user.id,
+                  nick: nick,
+                  nombre: nombre,
+                  apellidos: apellidos,
+                  edad: edad,
+                  email: email, // Guardar el email en la tabla profiles
+                },
+              ])
+              .select()
+              .single()
+
+            if (error) {
+              console.error('signUp: Error al crear el perfil:', error)
+              toast.error(`Error al crear el perfil: ${error.message}. Detalles: ${error.details}`)
+              throw error
+            }
+
+            profileData = data
+            console.log('signUp: Perfil creado:', profileData)
+          } catch (error) {
+            console.error('signUp: Error en la creación del perfil:', error)
+            toast.error(
+              `Error en la creación del perfil: ${error.message}. Detalles: ${error.details}`,
+            )
+            return false
+          }
+
+          // Subir el avatar si se proporciona un archivo
+          if (avatarFile) {
+            try {
+              const fileExt = avatarFile.name.split('.').pop()
+              const filePath = `avatars/${authData.user.id}-${Date.now()}.${fileExt}`
+
+              const { data: avatarData, error: avatarError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, avatarFile, {
+                  cacheControl: '3600',
+                  upsert: false,
+                })
+
+              if (avatarError) {
+                console.error('signUp: Error al subir el avatar:', avatarError)
+                toast.error('Error al subir el avatar: ' + avatarError.message)
+                // No interrumpir el registro si falla la subida del avatar
+              } else {
+                console.log('signUp: Avatar subido:', avatarData)
+                const avatarUrl = supabase.storage.from('avatars').getPublicUrl(filePath)
+                  .data.publicUrl
+
+                // Actualizar la URL del avatar en el perfil
+                const { data: updatedProfile, error: updateError } = await supabase
+                  .from('profiles')
+                  .update({ avatar_url: avatarUrl })
+                  .eq('user_id', authData.user.id)
+                  .select()
+                  .single()
+
+                if (updateError) {
+                  console.error('signUp: Error al actualizar la URL del avatar:', updateError)
+                  toast.error('Error al actualizar la URL del avatar: ' + updateError.message)
+                  // No interrumpir el registro si falla la actualización de la URL del avatar
+                } else {
+                  console.log('signUp: URL del avatar actualizada:', updatedProfile)
+                }
+              }
+            } catch (e) {
+              console.error('signUp: Error al procesar el avatar:', e)
+              toast.error('Error al procesar el avatar: ' + e.message)
+            }
+          }
+
+          await this.fetchProfile() // Cargar el perfil recién creado
+          toast.success(`ยกRegistro exitoso! Bienvenido ${nick}. Ya puedes iniciar sesión.`)
+          console.log('signUp: Usuario y perfil registrados con éxito.')
+          console.log('signUp: Datos del usuario registrado:', {
+            email: email,
+            nick: nick,
+            nombre: nombre,
+            apellidos: apellidos,
+            edad: edad,
+            avatarFile: avatarFile ? avatarFile.name : null,
+          })
           return true
         } else {
           toast.info('Registro exitoso. Por favor, verifica tu email para completar el registro.')
           console.log(
-            'signUp: Registro exitoso, verificaciรณn de email pendiente (authData.user es null).',
+            'signUp: Registro exitoso, verificación de email pendiente (authData.user es null).',
           )
           return true
         }

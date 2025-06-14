@@ -45,6 +45,17 @@
         <p v-if="invalidAge" class="error-message">La edad debe ser un número positivo.</p>
       </div>
 
+      <div class="form-group">
+        <label for="avatar">Avatar:</label>
+        <input
+          type="file"
+          id="avatar"
+          @change="handleAvatarChange"
+          accept="image/*"
+          :disabled="authStore.loading"
+        />
+      </div>
+
       <p v-if="authStore.loading" class="loading-message">Registrando...</p>
       <button type="submit" :disabled="authStore.loading || passwordMismatch || invalidAge">
         {{ authStore.loading ? 'Cargando...' : 'Registrarse' }}
