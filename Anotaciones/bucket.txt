@@ -1,0 +1,23 @@
+-- Para INSERT (Permite a los usuarios subir su propio avatar)
+create policy "Allow authenticated users to upload their own avatars"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'user-avatars' AND auth.uid()::text = path_tokens[1]);
+
+-- Para UPDATE (Permite a los usuarios reemplazar su propio avatar)
+create policy "Allow authenticated users to update their own avatars"
+on storage.objects for update
+to authenticated
+using (bucket_id = 'user-avatars' AND auth.uid()::text = path_tokens[1]);
+
+-- Para DELETE (Permite a los usuarios eliminar su propio avatar)
+create policy "Allow authenticated users to delete their own avatars"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'user-avatars' AND auth.uid()::text = path_tokens[1]);
+
+-- Para SELECT (Permite a CUALQUIERA leer los avatares para mostrarlos en la UI)
+create policy "Allow public read access to user avatars"
+on storage.objects for select
+to public
+using (bucket_id = 'user-avatars');

@@ -1,3 +1,135 @@
+<script setup>
+import { ref, onMounted, watch, computed } from 'vue'
+import { useProfilesStore } from '../stores/profiles'
+import { useAuthStore } from '../stores/auth'
+import { useToast } from 'vue-toastification' // Asegúrate de importar useToast
+
+const profilesStore = useProfilesStore()
+const authStore = useAuthStore()
+const toast = useToast() // Inicializa el toast
+
+// Asegúrate de que esta URL esté CORRECTA Y SIN COMILLAS EXTRA:
+const defaultAvatarPath =
+  'https://hzremmurawbartxmpimt.supabase.co/storage/v1/object/public/user-avatars/avatars/default-avatar.png'
+
+const profileData = ref({
+  nick: '',
+  nombre: '',
+  apellidos: '',
+  edad: null,
+})
+
+const selectedFile = ref(null) // Para almacenar el archivo seleccionado por el usuario
+const uploadMessage = ref('') // Para mensajes de estado de la subida
+
+// Propiedad computada para determinar qué avatar mostrar
+const currentAvatarUrl = computed(() => {
+  // Si authStore.profile existe y tiene avatar_url, lo usamos. Si no, usamos el default.
+  return authStore.profile?.avatar_url || defaultAvatarPath
+})
+
+// Watcher para cargar los datos del perfil cuando el store los tenga disponibles
+watch(
+  () => profilesStore.myProfile,
+  (newProfile) => {
+    if (newProfile) {
+      profileData.value = {
+        nick: newProfile.nick || '',
+        nombre: newProfile.nombre || '',
+        apellidos: newProfile.apellidos || '',
+        edad: newProfile.edad || null,
+      }
+      // No necesitamos selectedFile aquí, ya que es para la nueva subida
+    }
+  },
+  { immediate: true }, // Ejecuta el watcher inmediatamente si myProfile ya tiene valor al montar
+)
+
+// Función para manejar la selección de archivo
+const handleFileChange = (event) => {
+  selectedFile.value = event.target.files[0]
+  if (selectedFile.value) {
+    uploadMessage.value = `Archivo seleccionado: ${selectedFile.value.name}`
+  } else {
+    uploadMessage.value = ''
+  }
+}
+
+// Función para subir un nuevo avatar
+const uploadNewAvatar = async () => {
+  if (!selectedFile.value) {
+    toast.error('Por favor, selecciona un archivo de imagen.')
+    return
+  }
+  if (!authStore.userId) {
+    // Asegúrate de tener el userId disponible
+    toast.error('No se pudo obtener el ID del usuario. Por favor, inicia sesión de nuevo.')
+    return
+  }
+
+  // Llama a la acción del store para subir el avatar
+  const success = await profilesStore.uploadAvatar(selectedFile.value, authStore.userId)
+
+  if (success) {
+    // selectedFile.value se limpia aquí para resetear el input
+    selectedFile.value = null
+    // Esto es para que el input de tipo file se actualice visualmente.
+    // Una forma común es usar una ref en el input y resetearlo, o un truco de clave.
+    // Por ahora, simplemente limpiamos el mensaje.
+    uploadMessage.value = ''
+
+    // El currentAvatarUrl se actualizará reactivamente a través de authStore.profile.avatar_url
+    // gracias a la llamada a profilesStore.uploadAvatar
+  } else {
+    // El error ya se maneja y muestra con toast dentro de profilesStore.uploadAvatar
+    uploadMessage.value = 'Error al subir el avatar.'
+  }
+}
+
+// Función para eliminar el avatar actual
+const deleteCurrentAvatar = async () => {
+  if (!authStore.profile || !profilesStore.myProfile?.id) {
+    toast.error('No hay perfil para eliminar el avatar.')
+    return
+  }
+  // Llama a la acción del store para eliminar el avatar
+  // Pasamos el profileId y la URL actual para que el store maneje la eliminación del archivo
+  const success = await profilesStore.deleteAvatar(
+    profilesStore.myProfile.id,
+    authStore.profile.avatar_url,
+  )
+
+  if (success) {
+    // El currentAvatarUrl se actualizará reactivamente a null o al default
+  } else {
+    // El error ya se maneja y muestra con toast dentro de profilesStore.deleteAvatar
+  }
+}
+
+// Función para actualizar la información básica del perfil
+const updateProfileInfo = async () => {
+  if (!profilesStore.myProfile?.id) {
+    toast.error('No hay perfil para actualizar.')
+    return
+  }
+
+  const updated = await profilesStore.updateProfile(profilesStore.myProfile.id, profileData.value)
+  if (updated) {
+    toast.success('Información del perfil actualizada.')
+  } else {
+    // El error ya se maneja con toast dentro de profilesStore.updateProfile
+  }
+}
+
+// Al montar el componente, asegura que el perfil del usuario autenticado se cargue
+onMounted(async () => {
+  // Solo carga el perfil si no está ya cargado para evitar llamadas redundantes
+  if (!profilesStore.myProfile) {
+    await profilesStore.fetchMyProfile()
+  }
+})
+</script>
+
 <template>
   <div class="profile-settings-page page-card">
     <h1>Configuración de Perfil</h1>
@@ -45,252 +177,120 @@
         </div>
 
         <button type="submit" :disabled="profilesStore.loading">
-          {{ profilesStore.loading ? 'Guardando...' : 'Guardar Cambios' }}
+          {{ profilesStore.loading ? 'Guardando...' : 'Actualizar Perfil' }}
         </button>
       </form>
 
       <hr />
-
       <h2>Gestión de Avatar</h2>
       <div class="avatar-section">
-        <img
-          :src="authStore.profile?.avatar_url || defaultAvatarPath"
-          alt="Avatar de usuario"
-          class="user-avatar-preview"
-        />
-        <input
-          type="file"
-          @change="handleFileChange"
-          accept="image/*"
-          :disabled="profilesStore.loading"
-        />
-        <p v-if="uploadMessage" class="upload-message">{{ uploadMessage }}</p>
-        <button @click="uploadNewAvatar" :disabled="!selectedFile || profilesStore.loading">
-          {{ profilesStore.loading ? 'Subiendo...' : 'Subir Nuevo Avatar' }}
-        </button>
+        <img :src="currentAvatarUrl" alt="Avatar de usuario" class="user-avatar-preview" />
+
+        <div class="upload-avatar-controls">
+          <label for="avatar-upload" class="file-upload-label button">
+            Seleccionar nuevo avatar
+          </label>
+          <input
+            type="file"
+            id="avatar-upload"
+            accept="image/*"
+            @change="handleFileChange"
+            :disabled="profilesStore.loading"
+            style="display: none"
+          />
+          <span v-if="uploadMessage" class="upload-message">{{ uploadMessage }}</span>
+          <button
+            @click="uploadNewAvatar"
+            :disabled="!selectedFile || profilesStore.loading"
+            class="action-button"
+          >
+            {{ profilesStore.loading ? 'Subiendo...' : 'Subir Avatar' }}
+          </button>
+        </div>
+
         <button
-          v-if="profilesStore.myProfile.avatar_url"
-          @click="removeAvatar"
-          :disabled="profilesStore.loading"
+          @click="deleteCurrentAvatar"
+          :disabled="
+            !authStore.profile?.avatar_url ||
+            profilesStore.loading ||
+            authStore.profile?.avatar_url === defaultAvatarPath
+          "
           class="delete-avatar-button"
         >
-          {{ profilesStore.loading ? 'Eliminando...' : 'Eliminar Avatar' }}
+          {{ profilesStore.loading ? 'Eliminando...' : 'Eliminar Avatar Actual' }}
         </button>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, watch, computed } from 'vue'
-import { useProfilesStore } from '../stores/profiles'
-import { useAuthStore } from '../stores/auth'
+<style lang="scss" scoped>
+@use '../assets/styles/variables' as vars;
+@use 'sass:color';
 
-const profilesStore = useProfilesStore()
-const authStore = useAuthStore()
-
-// Ruta al avatar por defecto (desde la carpeta public)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const defaultAvatarPath =
-  'https://hzremmurawbartxmpimt.supabase.co/storage/v1/object/public/user-avatars/avatars/default-avatar.png'
-
-// Datos del formulario de perfil, inicializados con valores vacíos o nulos
-const profileData = ref({
-  nick: '',
-  nombre: '',
-  apellidos: '',
-  edad: null,
-})
-
-// Para la subida de avatar
-const selectedFile = ref(null) // Almacena el archivo File seleccionado
-const uploadMessage = ref('') // Mensaje de estado para la subida del avatar
-
-// Propiedad computada que devuelve la URL del avatar del usuario o la URL del avatar por defecto
-const currentAvatarUrl = computed(() => {
-  return authStore.profile?.avatar_url || defaultAvatarPath
-})
-
-/**
- * @description Carga los datos del perfil del store en el formulario local.
- * Se llama al montar el componente y cada vez que `profilesStore.myProfile` cambia.
- */
-const loadProfileData = () => {
-  if (profilesStore.myProfile) {
-    profileData.value.nick = profilesStore.myProfile.nick || ''
-    profileData.value.nombre = profilesStore.myProfile.nombre || ''
-    profileData.value.apellidos = profilesStore.myProfile.apellidos || ''
-    profileData.value.edad = profilesStore.myProfile.edad || null
-  }
+.profile-settings-page {
+  padding: vars.$spacing-lg;
+  max-width: 800px;
+  margin: vars.$spacing-xl auto;
 }
 
-// Al montar el componente, intenta cargar el perfil si no está ya cargado
-onMounted(async () => {
-  if (!profilesStore.myProfile && authStore.isAuthenticated) {
-    await profilesStore.fetchMyProfile()
+h1,
+h2 {
+  color: vars.$dark-text-color;
+  margin-bottom: vars.$spacing-md;
+  text-align: center;
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  background-color: vars.$light-border-color;
+  margin: vars.$spacing-lg 0;
+}
+
+.form-group {
+  margin-bottom: vars.$spacing-md;
+
+  label {
+    display: block;
+    margin-bottom: vars.$spacing-sm;
+    color: vars.$dark-text-color;
+    font-weight: bold;
   }
-  loadProfileData() // Inicializa los datos del formulario con el perfil actual
-})
 
-// Observa los cambios en `profilesStore.myProfile` y actualiza los datos del formulario
-watch(() => profilesStore.myProfile, loadProfileData)
+  input[type='text'],
+  input[type='number'] {
+    width: 100%;
+    padding: vars.$spacing-sm;
+    border: 1px solid vars.$light-border-color;
+    border-radius: vars.$border-radius-sm;
+    background-color: vars.$input-bg-color;
+    color: vars.$dark-text-color;
+    transition: border-color vars.$transition-speed;
 
-/**
- * @description Maneja el envío del formulario para actualizar la información de texto del perfil.
- */
-const updateProfileInfo = async () => {
-  if (profilesStore.myProfile?.id) {
-    const success = await profilesStore.updateProfile(profilesStore.myProfile.id, profileData.value)
-    if (success) {
-      alert('Perfil actualizado con éxito!')
-    } else {
-      alert('Error al actualizar el perfil.')
+    &:focus {
+      border-color: vars.$primary-color;
+      outline: none;
+    }
+
+    &:disabled {
+      background-color: vars.$disabled-bg-color;
+      color: vars.$medium-text-color;
+      cursor: not-allowed;
     }
   }
 }
 
-/**
- * @description Maneja el evento de cambio del input de tipo "file".
- * Guarda el archivo seleccionado en `selectedFile`.
- * @param {Event} event - El evento de cambio del input.
- */
-const handleFileChange = (event) => {
-  selectedFile.value = event.target.files[0]
-  uploadMessage.value = selectedFile.value ? `Archivo seleccionado: ${selectedFile.value.name}` : ''
-}
-
-/**
- * @description Sube el archivo de avatar seleccionado a Supabase Storage y actualiza la URL en el perfil.
- */
-const uploadNewAvatar = async () => {
-  if (!selectedFile.value) {
-    uploadMessage.value = 'Por favor, selecciona un archivo primero.'
-    return
-  }
-  if (!authStore.userId) {
-    uploadMessage.value = 'Error: No se encontró el ID de usuario para subir el avatar.'
-    return
-  }
-
-  uploadMessage.value = 'Subiendo avatar...'
-  // Llama a la acción `uploadAvatar` del store de perfiles
-  const newAvatarUrl = await profilesStore.uploadAvatar(selectedFile.value, authStore.userId)
-
-  if (newAvatarUrl) {
-    uploadMessage.value = 'Avatar subido y actualizado con éxito!'
-    selectedFile.value = null // Limpiar el input file
-    // Opcional: Volver a cargar el perfil para asegurarse de que la URL en el estado local se actualice
-    // Aunque updateProfile ya lo hace, esto podría ser un doble chequeo.
-    // await profilesStore.fetchMyProfile();
-  } else {
-    // Si hay un error en el store, lo muestra; de lo contrario, un mensaje genérico.
-    uploadMessage.value = profilesStore.error || 'Fallo al subir el avatar.'
-  }
-}
-
-/**
- * @description Elimina el avatar del perfil, estableciendo la URL a null en la base de datos
- * e intentando borrar el archivo del Storage.
- */
-const removeAvatar = async () => {
-  if (!profilesStore.myProfile?.id) {
-    alert('Error: No se encontró el ID del perfil para eliminar el avatar.')
-    return
-  }
-
-  // Pasa la URL actual del avatar para que la acción del store intente eliminar el archivo del Storage
-  const oldAvatarUrl = profilesStore.myProfile.avatar_url
-
-  const success = await profilesStore.deleteAvatar(profilesStore.myProfile.id, oldAvatarUrl)
-  if (success) {
-    alert('Avatar eliminado con éxito!')
-    // El store ya actualiza `myProfile.avatar_url` a `null`, no es necesario recargar.
-  } else {
-    alert('Error al eliminar el avatar.')
-  }
-}
-</script>
-
-<style scoped lang="scss">
-@use 'sass:color';
-@use '@/assets/styles/_variables.scss' as vars;
-
-.profile-settings-page {
-  max-width: 700px;
-  margin: vars.$spacing-lg auto;
-  padding: vars.$spacing-xl;
-  background-color: vars.$light-background-color;
-  border-radius: vars.$border-radius-lg;
-  box-shadow: vars.$box-shadow-medium;
-}
-
-h1 {
-  color: vars.$primary-color;
-  text-align: center;
-  margin-bottom: vars.$spacing-xl;
-  font-size: 2.2em;
-}
-
-h2 {
-  color: vars.$dark-text-color;
-  margin-top: vars.$spacing-xl;
-  margin-bottom: vars.$spacing-md;
-  border-bottom: 1px solid vars.$light-border-color;
-  padding-bottom: vars.$spacing-sm;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: vars.$spacing-md;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-label {
-  font-weight: bold;
-  color: vars.$medium-text-color;
-  margin-bottom: vars.$spacing-xs;
-}
-
-input[type='text'],
-input[type='number'],
-input[type='url'] {
-  padding: vars.$spacing-sm;
-  border: 1px solid vars.$light-border-color;
-  border-radius: vars.$border-radius-sm;
-  font-size: 1em;
-  color: vars.$dark-text-color;
-  background-color: vars.$input-bg-color;
-  transition:
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-
-  &:focus {
-    border-color: vars.$primary-color;
-    box-shadow: 0 0 0 3px rgba(vars.$primary-color, 0.2);
-    outline: none;
-  }
-
-  &:disabled {
-    background-color: vars.$disabled-bg-color;
-    cursor: not-allowed;
-    color: color.adjust(vars.$medium-text-color, $lightness: 20%);
-  }
-}
-
-button[type='submit'] {
+button[type='submit'],
+.action-button {
   background-color: vars.$primary-color;
   color: vars.$light-text-color;
   padding: vars.$spacing-sm vars.$spacing-md;
   border: none;
   border-radius: vars.$border-radius-sm;
   cursor: pointer;
-  font-size: 1.1em;
-  margin-top: vars.$spacing-md;
+  font-size: 1em;
+  margin-top: vars.$spacing-sm;
   transition: background-color vars.$transition-speed vars.$transition-ease;
 
   &:hover:not(:disabled) {
@@ -309,7 +309,7 @@ button[type='submit'] {
   flex-direction: column;
   align-items: center;
   gap: vars.$spacing-md;
-  margin-top: vars.$spacing-xl;
+  margin-bottom: vars.$spacing-xl;
 }
 
 .user-avatar-preview {
@@ -321,14 +321,36 @@ button[type='submit'] {
   box-shadow: vars.$box-shadow-small;
 }
 
-input[type='file'] {
-  padding: vars.$spacing-sm;
-  border: 1px solid vars.$light-border-color;
-  border-radius: vars.$border-radius-sm;
-  background-color: vars.$input-bg-color;
+.upload-avatar-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: vars.$spacing-sm;
   width: 100%;
-  max-width: 300px;
+  max-width: 300px; /* Para mantener los controles centrados y no demasiado anchos */
+}
+
+.file-upload-label {
+  // Estilo como botón
+  background-color: vars.$secondary-color;
+  color: vars.$light-text-color;
+  padding: vars.$spacing-sm vars.$spacing-md;
+  border: none;
+  border-radius: vars.$border-radius-sm;
   cursor: pointer;
+  font-size: 1em;
+  transition: background-color vars.$transition-speed vars.$transition-ease;
+  width: 100%; // Ocupa el ancho máximo dentro de su contenedor
+  text-align: center;
+
+  &:hover {
+    background-color: color.adjust(vars.$secondary-color, $lightness: -10%);
+  }
+}
+
+.upload-message {
+  font-size: 0.9em;
+  color: vars.$medium-text-color;
 }
 
 .delete-avatar-button {
@@ -339,7 +361,7 @@ input[type='file'] {
   border-radius: vars.$border-radius-sm;
   cursor: pointer;
   font-size: 1em;
-  margin-top: vars.$spacing-sm;
+  margin-top: vars.$spacing-sm; // Espacio entre los botones de subir y eliminar
   transition: background-color vars.$transition-speed vars.$transition-ease;
 
   &:hover:not(:disabled) {
@@ -354,28 +376,18 @@ input[type='file'] {
 }
 
 .loading-message,
-.error-message,
-.upload-message {
+.error-message {
   text-align: center;
   margin-top: vars.$spacing-md;
-  font-weight: bold;
 }
 
 .error-message {
   color: vars.$danger-color;
 }
 
-.loading-message {
-  color: vars.$medium-text-color;
-}
-
-.upload-message {
-  color: vars.$primary-color; // Un color distintivo para mensajes de subida
-}
-
-hr {
-  border: none;
-  border-top: 1px solid vars.$light-border-color;
-  margin: vars.$spacing-xl 0;
+@media (max-width: 600px) {
+  .profile-settings-page {
+    padding: vars.$spacing-md;
+  }
 }
 </style>
