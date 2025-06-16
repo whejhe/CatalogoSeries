@@ -53,7 +53,11 @@
 
       <h2>Gestión de Avatar</h2>
       <div class="avatar-section">
-        <img :src="currentAvatarUrl" alt="Avatar de usuario" class="user-avatar-preview" />
+        <img
+          :src="authStore.profile?.avatar_url || defaultAvatarPath"
+          alt="Avatar de usuario"
+          class="user-avatar-preview"
+        />
         <input
           type="file"
           @change="handleFileChange"
@@ -80,10 +84,15 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useProfilesStore } from '../stores/profiles'
-import { useAuthStore } from '../stores/auth' // Necesitamos el userId de auth store para la subida
+import { useAuthStore } from '../stores/auth'
 
 const profilesStore = useProfilesStore()
 const authStore = useAuthStore()
+
+// Ruta al avatar por defecto (desde la carpeta public)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const defaultAvatarPath =
+  'https://hzremmurawbartxmpimt.supabase.co/storage/v1/object/public/user-avatars/avatars/default-avatar.png'
 
 // Datos del formulario de perfil, inicializados con valores vacíos o nulos
 const profileData = ref({
@@ -97,13 +106,9 @@ const profileData = ref({
 const selectedFile = ref(null) // Almacena el archivo File seleccionado
 const uploadMessage = ref('') // Mensaje de estado para la subida del avatar
 
-// Ruta al avatar por defecto, asumiendo que está en la carpeta `public`
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const defaultAvatarPath = `${supabaseUrl}/storage/v1/object/public/user-avatars/avatars/default-avatar.png`
-
 // Propiedad computada que devuelve la URL del avatar del usuario o la URL del avatar por defecto
 const currentAvatarUrl = computed(() => {
-  return profilesStore.myProfile?.avatar_url || defaultAvatarPath
+  return authStore.profile?.avatar_url || defaultAvatarPath
 })
 
 /**

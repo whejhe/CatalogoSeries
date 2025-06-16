@@ -76,22 +76,31 @@ Aplicación web para gestionar un catálogo de series. Construida con **Vue 3**,
 ├── public/ # Archivos estáticos
 ├── src/
 │ ├── assets/ # Estilos y recursos
-│ │ └── main.css
+│ │ ├── main.scss
+│ │ └── styles/
+│ │ └── \_variables.scss
 │ ├── components/
-│ │ └── TheNavbar.vue
+│ │ ├── TheNavbar.vue
+│ │ └── icons/
+│ │ ├── IconCommunity.vue
+│ │ ├── IconDocumentation.vue
+│ │ ├── IconEcosystem.vue
+│ │ ├── IconSupport.vue
+│ │ └── IconTooling.vue
 │ ├── stores/
 │ │ ├── auth.js
+│ │ ├── counter.js
 │ │ ├── profiles.js
 │ │ └── series.js
 │ ├── router/
 │ │ └── index.js
-│ ├── supabase,js
-│ │
+│ ├── supabase.js
 │ ├── views/
 │ │ ├── AdminPage.vue
 │ │ ├── HomePage.vue
 │ │ ├── LoginPage.vue
 │ │ ├── ManageSeries.vue
+│ │ ├── ProfileSettings.vue
 │ │ └── RegisterPage.vue
 │ ├── App.vue
 │ └── main.js
@@ -165,7 +174,24 @@ El archivo `package.json` lista varias dependencias de desarrollo relacionadas c
 
 - El título de la página en `index.html` es el valor por defecto de Vite: `<title>Vite App</title>`. Este podría ser actualizado a un título más descriptivo del proyecto, como "Catálogo de Series".
 
+## 🎨 Gestión de Estilos (Sass)
+
+La aplicación utiliza Sass para una gestión de estilos robusta y mantenible. Se han implementado las siguientes mejoras recientes para modernizar y optimizar el uso de Sass:
+
+- **Migración a `@use`**: Se ha actualizado la forma de importar estilos y variables en todos los componentes y archivos `.scss`, pasando de la regla `@import` a la más moderna y eficiente `@use`. Esto asegura una mejor modularidad, evita conflictos de nombres y resuelve advertencias de depreciación en Dart Sass 3.0.0.
+- **Configuración de Vite**: Se ha eliminado la inyección global de variables Sass a través de `additionalData` en `vite.config.js`. Ahora, cada archivo o componente Vue que necesite acceder a las variables o funciones de Sass lo hace explícitamente mediante `@use`.
+- **Módulo de Color de Sass**: Para la manipulación de colores, se ha introducido el uso explícito del módulo `sass:color` con `@use "sass:color";`. Esto permite el acceso a funciones avanzadas como `color.adjust()`.
+- **Actualización de Funciones de Color**: Las funciones `darken()` y `lighten()`, que estaban deprecadas, han sido reemplazadas por `color.adjust()` para ajustar la luminosidad de los colores de forma segura y compatible con las últimas versiones de Sass.
+- **Variables de Estilo**: Se ha añadido la variable `$disabled-bg-color` a `src/assets/styles/_variables.scss` para proporcionar un color de fondo consistente y semántico para los elementos deshabilitados en toda la aplicación.
+
 ---
+
+## 📦 Dependencias y Configuración Adicional
+
+El archivo `package.json` lista varias dependencias de desarrollo relacionadas con la calidad del código y el formato:
+
+- **ESLint**: Configurado para linting de código JavaScript y Vue. El archivo de configuración principal es `eslint.config.js`.
+- **Prettier**: Utilizado para formatear automáticamente el código. La configuración se encuentra en `.prettierrc.json`.
 
 ## ✅ Próximos Pasos (Ideas para Continuar)
 
